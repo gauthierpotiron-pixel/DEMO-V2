@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartLog – Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --blue: #2B8FD0;
+    --blue-dark: #1A6FA8;
+    --blue-light: #5BB3E8;
+    --blue-pale: #EAF4FB;
+    --sky: #A8D8F0;
+    --white: #FFFFFF;
+    --gray: #6B7C8D;
+    --gray-light: #F4F8FB;
+    --text: #1C2B3A;
+    --green: #2ECC8A;
+    --orange: #F5A623;
+    --red: #E8453C;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--gray-light);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--white);
+    border-bottom: 1px solid rgba(43,143,208,0.15);
+    padding: 0 2rem;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 16px rgba(43,143,208,0.08);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, var(--blue-light), var(--blue-dark));
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(43,143,208,0.3);
+    position: relative;
+  }
+
+  .logo-icon svg { width: 24px; height: 24px; }
+
+  .logo-name {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.3rem;
+    color: var(--blue-dark);
+    letter-spacing: -0.02em;
+  }
+
+  .logo-name span { color: var(--blue-light); }
+
+  nav {
+    display: flex;
+    gap: 4px;
+  }
+
+  .nav-btn {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--gray);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .nav-btn:hover { background: var(--blue-pale); color: var(--blue); }
+
+  .nav-btn.active {
+    background: var(--blue);
+    color: white;
+    font-weight: 600;
+  }
+
+  .nav-badge {
+    background: var(--orange);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; animation: fadeIn 0.3s ease; }
+  .screen.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── HERO ── */
+  .hero {
+    background: linear-gradient(135deg, var(--blue-dark) 0%, var(--blue) 50%, var(--blue-light) 100%);
+    color: white;
+    padding: 4rem 2rem 3rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 70% 50%, rgba(255,255,255,0.08) 0%, transparent 60%);
+  }
+
+  .hero-tag {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.8rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    letter-spacing: -0.03em;
+  }
+
+  .hero p {
+    font-size: 1.05rem;
+    opacity: 0.85;
+    max-width: 480px;
+    margin: 0 auto 2rem;
+    line-height: 1.6;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin-top: 2rem;
+  }
+
+  .hero-stat { text-align: center; }
+  .hero-stat-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+  }
+  .hero-stat-label { font-size: 0.8rem; opacity: 0.75; margin-top: 2px; }
+
+  /* ── CONTAINER ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.3rem;
+  }
+
+  .section-sub {
+    color: var(--gray);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── FORM SCREEN ── */
+  .form-card {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    box-shadow: 0 4px 24px rgba(43,143,208,0.08);
+    border: 1px solid rgba(43,143,208,0.1);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1/-1; }
+
+  label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  input, select {
+    padding: 12px 14px;
+    border: 1.5px solid rgba(43,143,208,0.2);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text);
+    background: var(--gray-light);
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--blue);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(43,143,208,0.1);
+  }
+
+  .route-visual {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .route-visual input { flex: 1; }
+  .route-arrow {
+    color: var(--blue);
+    font-size: 1.4rem;
+    flex-shrink: 0;
+  }
+
+  /* Slider */
+  .slider-container { display: flex; flex-direction: column; gap: 8px; }
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--blue) 0%, var(--blue) var(--val, 60%), #dde8f0 var(--val, 60%));
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(43,143,208,0.4);
+  }
+
+  .slider-val {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--blue);
+    min-width: 45px;
+    text-align: right;
+  }
+
+  /* Price result */
+  .price-result {
+    background: linear-gradient(135deg, var(--blue) 0%, var(--blue-dark) 100%);
+    border-radius: 14px;
+    padding: 1.5rem 2rem;
+    color: white;
+    display: none;
+    margin-top: 1.5rem;
+    animation: slideUp 0.4s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .price-result.show { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+
+  .price-label { font-size: 0.85rem; opacity: 0.8; margin-bottom: 4px; }
+  .price-num {
+    font-family: 'Syne', sans-serif;
+    font-size: 2.4rem;
+    font-weight: 800;
+  }
+
+  .price-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: right;
+  }
+
+  .price-item {
+    font-size: 0.82rem;
+    opacity: 0.8;
+  }
+
+  .price-item strong { opacity: 1; font-weight: 600; }
+
+  .btn {
+    padding: 13px 28px;
+    border-radius: 10px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+    color: white;
+    box-shadow: 0 4px 14px rgba(43,143,208,0.35);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(43,143,208,0.45);
+  }
+
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-outline {
+    background: white;
+    color: var(--blue);
+    border: 1.5px solid var(--blue);
+  }
+
+  .btn-outline:hover { background: var(--blue-pale); }
+
+  .btn-success {
+    background: linear-gradient(135deg, var(--green), #22a870);
+    color: white;
+    box-shadow: 0 4px 14px rgba(46,204,138,0.3);
+  }
+
+  .btn-success:hover { transform: translateY(-1px); }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    justify-content: flex-end;
+  }
+
+  /* ── MARKETPLACE ── */
+  .filters {
+    background: white;
+    border-radius: 14px;
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 12px rgba(43,143,208,0.07);
+    border: 1px solid rgba(43,143,208,0.1);
+  }
+
+  .filter-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(43,143,208,0.2);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.83rem;
+    font-weight: 500;
+    color: var(--gray);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-btn:hover, .filter-btn.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: white;
+  }
+
+  .listings { display: flex; flex-direction: column; gap: 1rem; }
+
+  .listing-card {
+    background: white;
+    border-radius: 14px;
+    padding: 1.4rem 1.6rem;
+    border: 1.5px solid rgba(43,143,208,0.1);
+    box-shadow: 0 2px 12px rgba(43,143,208,0.06);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+
+  .listing-card:hover {
+    border-color: var(--blue);
+    box-shadow: 0 4px 20px rgba(43,143,208,0.15);
+    transform: translateY(-1px);
+  }
+
+  .listing-route {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .listing-city {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+
+  .listing-arrow {
+    color: var(--blue);
+    font-size: 1.1rem;
+  }
+
+  .listing-meta {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .meta-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.82rem;
+    color: var(--gray);
+  }
+
+  .meta-chip svg { width: 14px; height: 14px; opacity: 0.6; }
+
+  .capacity-bar {
+    width: 80px;
+    height: 6px;
+    background: #e0ecf5;
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+
+  .capacity-fill {
+    height: 100%;
+    background: linear-gradient(to right, var(--green), #22c77a);
+    border-radius: 3px;
+  }
+
+  .listing-right {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .listing-price {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: var(--blue-dark);
+  }
+
+  .listing-date {
+    font-size: 0.8rem;
+    color: var(--gray);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .badge-green { background: rgba(46,204,138,0.12); color: #1a9e6a; }
+  .badge-orange { background: rgba(245,166,35,0.12); color: #c07800; }
+  .badge-blue { background: rgba(43,143,208,0.12); color: var(--blue-dark); }
+
+  /* ── TRACKING ── */
+  #map {
+    width: 100%;
+    height: 380px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(43,143,208,0.15);
+    border: 1px solid rgba(43,143,208,0.15);
+    margin-bottom: 1.5rem;
+  }
+
+  .tracking-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+    box-shadow: 0 4px 24px rgba(43,143,208,0.08);
+    border: 1px solid rgba(43,143,208,0.1);
+  }
+
+  .tracking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .tracking-id {
+    font-size: 0.8rem;
+    color: var(--gray);
+    margin-bottom: 4px;
+  }
+
+  .tracking-route {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+  }
+
+  .tracking-status {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    margin-right: 6px;
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.3); }
+  }
+
+  .progress-steps {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+
+  .progress-steps::before {
+    content: '';
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    right: 14px;
+    height: 2px;
+    background: #dde8f0;
+    z-index: 0;
+  }
+
+  .progress-line {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    height: 2px;
+    background: linear-gradient(to right, var(--blue), var(--blue-light));
+    z-index: 1;
+    transition: width 0.5s ease;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 2;
+    width: 80px;
+    text-align: center;
+  }
+
+  .step-dot {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid #dde8f0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.4s;
+  }
+
+  .step.done .step-dot {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: white;
+  }
+
+  .step.current .step-dot {
+    background: white;
+    border-color: var(--blue);
+    color: var(--blue);
+    box-shadow: 0 0 0 4px rgba(43,143,208,0.2);
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+    color: var(--gray);
+    font-weight: 500;
+  }
+
+  .step.done .step-label, .step.current .step-label { color: var(--blue-dark); font-weight: 600; }
+
+  .tracking-info-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .info-box {
+    background: var(--gray-light);
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .info-box-val {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--blue-dark);
+    margin-bottom: 2px;
+  }
+
+  .info-box-label {
+    font-size: 0.75rem;
+    color: var(--gray);
+  }
+
+  .track-btn-row {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  /* ── NOTIFICATION ── */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: white;
+    border-radius: 12px;
+    padding: 1rem 1.4rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    border-left: 4px solid var(--green);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 999;
+    max-width: 320px;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { font-size: 1.3rem; }
+  .toast-text { font-size: 0.88rem; font-weight: 500; line-height: 1.4; }
+  .toast-text strong { display: block; font-weight: 700; }
+
+  /* Truck icon on map */
+  .truck-marker {
+    background: var(--blue);
+    border: 3px solid white;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(43,143,208,0.4);
+    font-size: 1rem;
+  }
+
+  /* ── HOMEPAGE ── */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .feature-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.8rem;
+    box-shadow: 0 4px 20px rgba(43,143,208,0.07);
+    border: 1px solid rgba(43,143,208,0.1);
+    text-align: center;
+    transition: all 0.25s;
+    cursor: pointer;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 28px rgba(43,143,208,0.15);
+    border-color: var(--blue);
+  }
+
+  .feature-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--blue-pale), #d0eaf7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin: 0 auto 1rem;
+  }
+
+  .feature-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+
+  .feature-desc { font-size: 0.85rem; color: var(--gray); line-height: 1.5; }
+
+  .cta-banner {
+    background: linear-gradient(135deg, var(--blue-dark), var(--blue));
+    border-radius: 16px;
+    padding: 2rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+  }
+
+  .cta-text h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .cta-text p { font-size: 0.88rem; opacity: 0.8; }
+
+  .btn-white {
+    background: white;
+    color: var(--blue-dark);
+    font-weight: 700;
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-white:hover { transform: scale(1.03); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <!-- Globe + arrows SVG matching their logo -->
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="9" stroke="white" stroke-width="1.5"/>
+        <ellipse cx="12" cy="12" rx="4" ry="9" stroke="white" stroke-width="1.5"/>
+        <line x1="3" y1="12" x2="21" y2="12" stroke="white" stroke-width="1.5"/>
+        <path d="M5 7.5 Q8 9 12 9 Q16 9 19 7.5" stroke="white" stroke-width="1.2" fill="none"/>
+        <path d="M5 16.5 Q8 15 12 15 Q16 15 19 16.5" stroke="white" stroke-width="1.2" fill="none"/>
+        <!-- arrows -->
+        <path d="M15 4.5 L18 6 L15 7.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M9 16.5 L6 18 L9 19.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+    </div>
+    <span class="logo-name">Smart<span>Log</span></span>
+  </div>
+  <nav>
+    <button class="nav-btn active" onclick="showScreen('home')">Home</button>
+    <button class="nav-btn" onclick="showScreen('publish')">Post a Route</button>
+    <button class="nav-btn" onclick="showScreen('marketplace')">Marketplace <span class="nav-badge">7</span></button>
+    <button class="nav-btn" onclick="showScreen('tracking')">Live Tracking</button>
+  </nav>
+</header>
+
+<!-- ══════════════ HOME ══════════════ -->
+<div id="screen-home" class="screen active">
+  <div class="hero">
+    <div class="hero-tag">🚛 Collaborative Logistics</div>
+    <h1>Every empty km<br>is a wasted cost.</h1>
+    <p>SmartLog connects businesses to share available truck space and cut transportation costs — for everyone.</p>
+    <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-white" onclick="showScreen('publish')">Post a Route</button>
+      <button class="btn" style="background:rgba(255,255,255,0.15);color:white;border:1.5px solid rgba(255,255,255,0.4);" onclick="showScreen('marketplace')">Browse Listings</button>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="hero-stat-num">40%</div>
+        <div class="hero-stat-label">average savings</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">1,200+</div>
+        <div class="hero-stat-label">optimized routes</div>
+      </div>
+      <div class="hero-stat">
+        <div class="hero-stat-num">280t</div>
+        <div class="hero-stat-label">CO₂ saved</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="features">
+      <div class="feature-card" onclick="showScreen('publish')">
+        <div class="feature-icon">📣</div>
+        <div class="feature-title">Post a Listing</div>
+        <div class="feature-desc">Enter your route and available space. SmartLog automatically calculates a fair price.</div>
+      </div>
+      <div class="feature-card" onclick="showScreen('marketplace')">
+        <div class="feature-icon">🔍</div>
+        <div class="feature-title">Find Transport</div>
+        <div class="feature-desc">Browse available listings and book the space you need in just a few clicks.</div>
+      </div>
+      <div class="feature-card" onclick="showScreen('tracking')">
+        <div class="feature-icon">📍</div>
+        <div class="feature-title">Real-Time Tracking</div>
+        <div class="feature-desc">Follow your goods at every step of the journey from your client dashboard.</div>
+      </div>
+    </div>
+    <div class="cta-banner">
+      <div class="cta-text">
+        <h3>Ready to optimize your transport?</h3>
+        <p>Join 340 companies using SmartLog across France and Belgium.</p>
+      </div>
+      <button class="btn-white" onclick="showScreen('publish')">Get Started →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ PUBLISH ══════════════ -->
+<div id="screen-publish" class="screen">
+  <div class="container">
+    <div class="section-title">Post a Route</div>
+    <div class="section-sub">SmartLog analyses your route and suggests an optimised price before publishing.</div>
+
+    <div class="form-card">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label>Route</label>
+          <div class="route-visual">
+            <input type="text" id="from" value="Tournai, Belgium" placeholder="Departure city">
+            <span class="route-arrow">→</span>
+            <input type="text" id="to" value="Arcachon, France" placeholder="Destination city">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Departure Date</label>
+          <input type="date" id="dep-date" value="2026-04-14">
+        </div>
+
+        <div class="form-group">
+          <label>Cargo Type</label>
+          <select id="cargo-type">
+            <option>Pallets</option>
+            <option>Bulk</option>
+            <option>Refrigerated</option>
+            <option>Fragile</option>
+            <option>Materials</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Total Truck Capacity</label>
+          <select id="truck-size">
+            <option value="33">Semi-trailer (33 pallets)</option>
+            <option value="18">Rigid truck (18 pallets)</option>
+            <option value="8">Van (8 pallets)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Available Space to Share</label>
+          <div class="slider-container">
+            <div class="slider-row">
+              <input type="range" min="10" max="90" value="60" id="space-slider" oninput="updateSlider(this)">
+              <span class="slider-val" id="slider-display">60%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin-top:0.5rem;">
+        <button class="btn btn-primary" onclick="calculatePrice()">⚡ Calculate SmartLog Price</button>
+      </div>
+
+      <div class="price-result" id="price-result">
+        <div>
+          <div class="price-label">SmartLog Suggested Price</div>
+          <div class="price-num" id="price-display">—</div>
+          <div style="font-size:0.8rem;opacity:0.75;margin-top:4px">Validated by our pricing algorithm</div>
+        </div>
+        <div class="price-breakdown">
+          <div class="price-item">📏 Distance: <strong id="dist-display">—</strong></div>
+          <div class="price-item">📦 Space: <strong id="space-display">—</strong></div>
+          <div class="price-item">⛽ Fuel: <strong id="fuel-display">—</strong></div>
+          <div class="price-item">👤 Driver: <strong id="driver-display">—</strong></div>
+        </div>
+      </div>
+
+      <div class="form-actions" id="publish-actions" style="display:none;">
+        <button class="btn btn-outline" onclick="resetForm()">Edit</button>
+        <button class="btn btn-success" onclick="publishOffer()">✓ Accept & Publish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MARKETPLACE ══════════════ -->
+<div id="screen-marketplace" class="screen">
+  <div class="container">
+    <div class="section-title">Route Marketplace</div>
+    <div class="section-sub">7 listings available — Click on a listing to book</div>
+
+    <div class="filters">
+      <span class="filter-label">Filter:</span>
+      <button class="filter-btn active" onclick="filterListings('all',this)">All</button>
+      <button class="filter-btn" onclick="filterListings('fr',this)">🇫🇷 France</button>
+      <button class="filter-btn" onclick="filterListings('be',this)">🇧🇪 Belgium</button>
+      <button class="filter-btn" onclick="filterListings('ref',this)">❄️ Refrigerated</button>
+    </div>
+
+    <div class="listings" id="listings-container"></div>
+  </div>
+</div>
+
+<!-- ══════════════ TRACKING ULTRA ══════════════ -->
+<div id="screen-tracking" class="screen">
+<style>
+  #screen-tracking { background: #0a0f1a; min-height: calc(100vh - 64px); }
+  .ultra-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr 260px;
+    height: calc(100vh - 64px - 56px);
+    min-height: 500px;
+  }
+  .ultra-topbar {
+    background: #111827;
+    border-bottom: 1px solid rgba(43,143,208,0.2);
+    padding: 0 1.2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .ultra-live-badge {
+    display:flex;align-items:center;gap:6px;
+    background:rgba(46,204,138,0.1);border:1px solid rgba(46,204,138,0.3);
+    border-radius:20px;padding:4px 12px;font-size:0.72rem;font-weight:600;color:#2ECC8A;
+  }
+  .ultra-live-dot { width:7px;height:7px;border-radius:50%;background:#2ECC8A;animation:pulse 1.2s infinite; }
+  .ultra-time { font-family:'DM Mono',monospace;font-size:0.85rem;color:#5BB3E8; }
+  .ultra-alert-bar {
+    display:flex;align-items:center;gap:8px;
+    background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);
+    border-radius:8px;padding:5px 12px;font-size:0.78rem;color:#F5A623;font-weight:500;
+    transition:opacity 0.4s;
+  }
+
+  /* LEFT */
+  .ultra-left {
+    background:#111827;border-right:1px solid rgba(43,143,208,0.15);
+    overflow-y:auto;display:flex;flex-direction:column;
+  }
+  .u-section { padding:0.9rem 1rem;border-bottom:1px solid rgba(43,143,208,0.1); }
+  .u-label { font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#6B7C8D;margin-bottom:0.7rem; }
+  .u-shipment-id { font-family:'DM Mono',monospace;font-size:0.75rem;color:#5BB3E8;margin-bottom:6px; }
+  .u-route { display:flex;align-items:center;gap:6px;margin-bottom:3px; }
+  .u-city { font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:white; }
+  .u-arrow { color:#2B8FD0;font-size:0.9rem; }
+  .u-sub { font-size:0.72rem;color:#6B7C8D; }
+  .u-progress-track { height:5px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden;margin:10px 0 3px; }
+  .u-progress-fill { height:100%;background:linear-gradient(to right,#1A6FA8,#5BB3E8);border-radius:3px;transition:width 0.5s ease; }
+  .u-progress-labels { display:flex;justify-content:space-between;font-size:0.65rem;color:#6B7C8D; }
+
+  .u-steps { display:flex;flex-direction:column; }
+  .u-step { display:flex;gap:10px;align-items:flex-start;padding:7px 0;position:relative; }
+  .u-step:not(:last-child)::after { content:'';position:absolute;left:9px;top:24px;bottom:-7px;width:1px;background:rgba(43,143,208,0.15); }
+  .u-dot { width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.55rem;flex-shrink:0;margin-top:1px; }
+  .u-dot.done { background:#2B8FD0;color:white; }
+  .u-dot.cur { background:transparent;border:2px solid #2B8FD0;color:#2B8FD0;animation:borderPulse2 1.5s infinite; }
+  .u-dot.pend { background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#6B7C8D; }
+  @keyframes borderPulse2 { 0%,100%{box-shadow:0 0 0 0 rgba(43,143,208,0.4)} 50%{box-shadow:0 0 0 4px rgba(43,143,208,0)} }
+  .u-step-name { font-size:0.78rem;font-weight:500;color:white; }
+  .u-step-time { font-size:0.68rem;color:#6B7C8D;font-family:'DM Mono',monospace; }
+  .u-step-detail { font-size:0.68rem;color:#5BB3E8;margin-top:1px; }
+
+  .u-driver { display:flex;gap:10px;align-items:center;margin-bottom:10px; }
+  .u-avatar { width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1A6FA8,#8B5CF6);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.8rem;color:white;flex-shrink:0; }
+  .u-driver-name { font-weight:500;font-size:0.82rem;color:white; }
+  .u-driver-meta { font-size:0.7rem;color:#6B7C8D;margin-top:1px; }
+  .u-stats-grid { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
+  .u-stat { background:rgba(255,255,255,0.03);border-radius:7px;padding:7px 9px;border:1px solid rgba(43,143,208,0.12); }
+  .u-stat-val { font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:#5BB3E8; }
+  .u-stat-label { font-size:0.62rem;color:#6B7C8D;margin-top:1px; }
+
+  .u-sensors { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
+  .u-sensor { background:#1a2535;border-radius:8px;padding:8px 10px;border:1px solid rgba(43,143,208,0.12); }
+  .u-sensor-val { font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:white; }
+  .u-sensor-label { font-size:0.65rem;color:#6B7C8D; }
+  .u-sbar { height:3px;background:rgba(255,255,255,0.07);border-radius:2px;margin-top:5px;overflow:hidden; }
+  .u-sfill { height:100%;border-radius:2px;transition:width 0.8s ease; }
+
+  /* MAP */
+  .ultra-map { position:relative;background:#0d1421; }
+  #map { width:100%;height:100%; }
+  .u-map-overlay {
+    position:absolute;z-index:500;background:#111827;
+    border:1px solid rgba(43,143,208,0.2);border-radius:9px;padding:9px 13px;
+  }
+  .u-speed-ov { top:10px;left:10px;text-align:center;min-width:72px; }
+  .u-speed-num { font-family:'Syne',sans-serif;font-weight:800;font-size:1.8rem;color:white;line-height:1; }
+  .u-speed-unit { font-size:0.65rem;color:#6B7C8D; }
+  .u-speed-label { font-size:0.6rem;color:#5BB3E8;margin-top:2px; }
+  .u-eta-ov { top:10px;right:10px;min-width:110px; }
+  .u-eta-val { font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;color:#2ECC8A; }
+  .u-eta-label { font-size:0.65rem;color:#6B7C8D; }
+  .u-eta-dist { font-size:0.75rem;color:#5BB3E8;margin-top:3px; }
+
+  /* CAMERAS */
+  .u-cams { position:absolute;bottom:10px;right:10px;z-index:500;display:flex;flex-direction:column;gap:7px; }
+  .u-cam { width:168px;background:#111827;border:1px solid rgba(43,143,208,0.2);border-radius:9px;overflow:hidden;cursor:pointer;transition:transform 0.2s; }
+  .u-cam:hover { transform:scale(1.03);border-color:#2B8FD0; }
+  .u-cam-screen { width:100%;height:90px;background:#050d18;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center; }
+  .u-cam-road { position:absolute;bottom:0;left:0;right:0;height:100%;background:linear-gradient(to top,#1a1a1a 0%,#2a2a2a 40%,#1a2535 100%); }
+  .u-cam-lines { position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:12px;display:flex;flex-direction:column;align-items:center; }
+  .u-cam-line { width:4px;height:16px;background:rgba(255,220,0,0.7);border-radius:2px;margin-bottom:12px;animation:roadAnim2 0.6s linear infinite; }
+  @keyframes roadAnim2 { from{transform:translateY(-28px)} to{transform:translateY(0)} }
+  .u-cam-truck { position:absolute;bottom:22px;left:50%;transform:translateX(-50%);z-index:2; }
+  .u-cam-hud { position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;justify-content:space-between;padding:5px 7px;pointer-events:none; }
+  .u-cam-rec { display:flex;align-items:center;gap:3px; }
+  .u-cam-recdot { width:5px;height:5px;border-radius:50%;background:#E8453C;animation:pulse 1s infinite; }
+  .u-cam-rectext { font-size:0.55rem;color:white;font-weight:700; }
+  .u-cam-bot { display:flex;justify-content:space-between; }
+  .u-cam-id { font-size:0.55rem;color:rgba(255,255,255,0.4);font-family:'DM Mono',monospace; }
+  .u-cam-label { padding:3px 8px;background:rgba(0,0,0,0.5);font-size:0.65rem;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:5px; }
+  .u-cam-ldot { width:5px;height:5px;border-radius:50%;background:#2B8FD0; }
+
+  /* RIGHT */
+  .ultra-right { background:#111827;border-left:1px solid rgba(43,143,208,0.15);overflow-y:auto;display:flex;flex-direction:column; }
+  .u-metrics-grid { display:grid;grid-template-columns:1fr 1fr;gap:6px; }
+  .u-metric { background:#1a2535;border-radius:8px;padding:8px 10px;text-align:center;border:1px solid rgba(43,143,208,0.1); }
+  .u-metric-val { font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:white; }
+  .u-metric-label { font-size:0.62rem;color:#6B7C8D;margin-top:1px; }
+  .u-chart { height:52px;display:flex;align-items:flex-end;gap:2px;padding:0 2px; }
+  .u-bar { flex:1;border-radius:2px 2px 0 0;min-width:0;background:linear-gradient(to top,#1A6FA8,#5BB3E8);opacity:0.8; }
+  .u-event-log { display:flex;flex-direction:column; }
+  .u-event { display:flex;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04); }
+  .u-etime { font-family:'DM Mono',monospace;font-size:0.65rem;color:#6B7C8D;white-space:nowrap;padding-top:2px;min-width:38px; }
+  .u-edot { width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px; }
+  .u-etext { font-size:0.72rem;color:#cbd5e1;line-height:1.4; }
+  .u-esub { font-size:0.65rem;color:#6B7C8D;margin-top:1px; }
+  .u-cargo { display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04); }
+  .u-cargo-name { font-size:0.72rem;color:#cbd5e1; }
+  .u-cargo-w { font-size:0.68rem;color:#5BB3E8;font-family:'DM Mono',monospace; }
+  .u-sim-btn {
+    margin:0.8rem 1rem;padding:11px;border-radius:9px;border:none;
+    background:linear-gradient(135deg,#2B8FD0,#1A6FA8);
+    color:white;font-family:'DM Sans',sans-serif;font-weight:600;font-size:0.85rem;
+    cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;
+  }
+  .u-sim-btn:hover { transform:translateY(-1px);box-shadow:0 5px 18px rgba(43,143,208,0.35); }
+  .u-sim-btn:disabled { opacity:0.5;cursor:not-allowed;transform:none; }
+  .u-back-btn {
+    margin:0 1rem 0.8rem;padding:9px;border-radius:9px;border:1.5px solid rgba(43,143,208,0.3);
+    background:transparent;color:#5BB3E8;font-family:'DM Sans',sans-serif;font-weight:500;font-size:0.82rem;
+    cursor:pointer;transition:all 0.2s;
+  }
+  .u-back-btn:hover { background:rgba(43,143,208,0.1); }
+  ::-webkit-scrollbar { width:3px; }
+  ::-webkit-scrollbar-thumb { background:rgba(43,143,208,0.3);border-radius:2px; }
+</style>
+
+  <!-- Ultra topbar -->
+  <div class="ultra-topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="ultra-live-badge"><div class="ultra-live-dot"></div>LIVE TRACKING</div>
+      <span style="font-size:0.78rem;color:#6B7C8D;">Order SL-2026-0892 · Tournai → Arcachon</span>
+    </div>
+    <div class="ultra-alert-bar" id="u-alert-bar">
+      <span style="color:#F5A623">⚠</span>
+      <span id="u-alert-text">Traffic detected on A10 — 12 min delay added</span>
+    </div>
+    <div class="ultra-time" id="u-clock">--:--:--</div>
+  </div>
+
+  <div class="ultra-layout">
+
+    <!-- LEFT -->
+    <div class="ultra-left">
+      <div class="u-section">
+        <div class="u-label">Shipment</div>
+        <div class="u-shipment-id">SL-2026-0892</div>
+        <div class="u-route">
+          <span class="u-city">Tournai</span>
+          <span class="u-arrow">→</span>
+          <span class="u-city">Arcachon</span>
+          <span class="badge badge-green" style="margin-left:6px;font-size:0.65rem;">In Transit</span>
+        </div>
+        <div class="u-sub">892 km · Semi-trailer · 18 pallets</div>
+        <div class="u-progress-track"><div class="u-progress-fill" id="u-progress" style="width:62%"></div></div>
+        <div class="u-progress-labels"><span>Departure</span><span id="u-pct">62%</span><span>Arrival</span></div>
+      </div>
+
+      <div class="u-section">
+        <div class="u-label">Journey Timeline</div>
+        <div class="u-steps">
+          <div class="u-step">
+            <div class="u-dot done">✓</div>
+            <div><div class="u-step-name">Pickup confirmed</div><div class="u-step-time">07:12 · Tournai depot</div><div class="u-step-detail">18 pallets · seal #TRN-8821</div></div>
+          </div>
+          <div class="u-step">
+            <div class="u-dot done">✓</div>
+            <div><div class="u-step-name">Border crossing</div><div class="u-step-time">08:47 · FR/BE frontier</div><div class="u-step-detail">Customs cleared · no delay</div></div>
+          </div>
+          <div class="u-step">
+            <div class="u-dot done">✓</div>
+            <div><div class="u-step-name">Rest stop — A1</div><div class="u-step-time">10:15 · Aire de Ressons</div><div class="u-step-detail">45 min mandatory break</div></div>
+          </div>
+          <div class="u-step">
+            <div class="u-dot cur">→</div>
+            <div><div class="u-step-name">En route — A10 Aquitaine</div><div class="u-step-time" id="u-cur-time">14:32 · Current position</div><div class="u-step-detail" id="u-cur-detail">312 km remaining · ETA 19:04</div></div>
+          </div>
+          <div class="u-step">
+            <div class="u-dot pend">○</div>
+            <div><div class="u-step-name">Delivery — Arcachon</div><div class="u-step-time">Est. 19:04 · Client warehouse</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="u-section">
+        <div class="u-label">Driver</div>
+        <div class="u-driver">
+          <div class="u-avatar">JM</div>
+          <div><div class="u-driver-name">Jean-Luc Moreau</div><div class="u-driver-meta">License A+E · 14 yrs · ⭐ 4.9</div></div>
+        </div>
+        <div class="u-stats-grid">
+          <div class="u-stat"><div class="u-stat-val">6h 18m</div><div class="u-stat-label">Drive time today</div></div>
+          <div class="u-stat"><div class="u-stat-val">2h 00m</div><div class="u-stat-label">Legal remaining</div></div>
+          <div class="u-stat"><div class="u-stat-val" id="u-avg-spd">87 km/h</div><div class="u-stat-label">Avg speed</div></div>
+          <div class="u-stat"><div class="u-stat-val">0</div><div class="u-stat-label">Incidents</div></div>
+        </div>
+      </div>
+
+      <div class="u-section">
+        <div class="u-label">IoT Sensors — Live</div>
+        <div class="u-sensors">
+          <div class="u-sensor"><div style="font-size:0.9rem;margin-bottom:3px">🌡️</div><div class="u-sensor-val" id="u-temp">4.2°C</div><div class="u-sensor-label">Cargo temp</div><div class="u-sbar"><div class="u-sfill" style="background:#2B8FD0;width:42%" id="u-sf-temp"></div></div></div>
+          <div class="u-sensor"><div style="font-size:0.9rem;margin-bottom:3px">💧</div><div class="u-sensor-val" id="u-hum">61%</div><div class="u-sensor-label">Humidity</div><div class="u-sbar"><div class="u-sfill" style="background:#2ECC8A;width:61%" id="u-sf-hum"></div></div></div>
+          <div class="u-sensor"><div style="font-size:0.9rem;margin-bottom:3px">⚖️</div><div class="u-sensor-val">18.4t</div><div class="u-sensor-label">Load weight</div><div class="u-sbar"><div class="u-sfill" style="background:#F5A623;width:74%"></div></div></div>
+          <div class="u-sensor"><div style="font-size:0.9rem;margin-bottom:3px">📳</div><div class="u-sensor-val" id="u-vib">Low</div><div class="u-sensor-label">Vibration</div><div class="u-sbar"><div class="u-sfill" style="background:#8B5CF6;width:15%" id="u-sf-vib"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAP -->
+    <div class="ultra-map">
+      <div id="map"></div>
+      <div class="u-map-overlay u-speed-ov">
+        <div class="u-speed-num" id="u-speed">87</div>
+        <div class="u-speed-unit">km/h</div>
+        <div class="u-speed-label">CURRENT SPEED</div>
+      </div>
+      <div class="u-map-overlay u-eta-ov">
+        <div class="u-eta-label">Estimated arrival</div>
+        <div class="u-eta-val" id="u-eta">19:04</div>
+        <div class="u-eta-dist" id="u-eta-dist">312 km remaining</div>
+      </div>
+      <div class="u-cams">
+        <div class="u-cam">
+          <div class="u-cam-screen">
+            <div class="u-cam-road"></div>
+            <div class="u-cam-lines"><div class="u-cam-line"></div><div class="u-cam-line"></div><div class="u-cam-line"></div><div class="u-cam-line"></div><div class="u-cam-line"></div></div>
+            <div class="u-cam-truck">
+              <svg width="30" height="16" viewBox="0 0 32 18" fill="none"><rect x="6" y="2" width="22" height="12" rx="2" fill="#2B8FD0"/><rect x="0" y="5" width="8" height="9" rx="1.5" fill="#1A6FA8"/><rect x="1" y="6" width="5" height="5" rx="1" fill="#7ec8f0" opacity="0.6"/><circle cx="8" cy="16" r="2.5" fill="#333"/><circle cx="24" cy="16" r="2.5" fill="#333"/><circle cx="28" cy="16" r="2.5" fill="#333"/></svg>
+            </div>
+            <div class="u-cam-hud">
+              <div class="u-cam-rec"><div class="u-cam-recdot"></div><div class="u-cam-rectext">REC</div></div>
+              <div class="u-cam-bot"><div class="u-cam-id" id="u-cam1-loc">A10 · km 142</div><div class="u-cam-id" id="u-cam1-t">--:--:--</div></div>
+            </div>
+          </div>
+          <div class="u-cam-label"><div class="u-cam-ldot"></div>Autoroute Cam A10</div>
+        </div>
+        <div class="u-cam">
+          <div class="u-cam-screen" style="background:#040d08;">
+            <div class="u-cam-road" style="background:linear-gradient(to top,#111 0%,#1a2a1a 40%,#0d1a10 100%)"></div>
+            <div class="u-cam-lines"><div class="u-cam-line" style="animation-duration:0.8s"></div><div class="u-cam-line" style="animation-duration:0.8s"></div><div class="u-cam-line" style="animation-duration:0.8s"></div><div class="u-cam-line" style="animation-duration:0.8s"></div><div class="u-cam-line" style="animation-duration:0.8s"></div></div>
+            <div style="position:absolute;inset:0;background:rgba(0,50,0,0.3);display:flex;align-items:center;justify-content:center;"><span style="font-size:0.55rem;color:rgba(0,255,50,0.5);font-family:'DM Mono',monospace;">NIGHT VISION</span></div>
+            <div class="u-cam-hud">
+              <div class="u-cam-rec"><div class="u-cam-recdot"></div><div class="u-cam-rectext">REC</div></div>
+              <div class="u-cam-bot"><div class="u-cam-id">Toll · Virsac</div><div class="u-cam-id" id="u-cam2-t">--:--:--</div></div>
+            </div>
+          </div>
+          <div class="u-cam-label"><div class="u-cam-ldot" style="background:#2ECC8A"></div>Toll Gate — Virsac</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="ultra-right">
+      <div class="u-section">
+        <div class="u-label">Live Metrics</div>
+        <div class="u-metrics-grid">
+          <div class="u-metric"><div class="u-metric-val" id="u-kmdone">580</div><div class="u-metric-label">km done</div></div>
+          <div class="u-metric"><div class="u-metric-val" id="u-kmleft">312</div><div class="u-metric-label">km left</div></div>
+          <div class="u-metric"><div class="u-metric-val" id="u-fuel">38%</div><div class="u-metric-label">fuel left</div></div>
+          <div class="u-metric"><div class="u-metric-val" style="color:#2ECC8A" id="u-co2">47 kg</div><div class="u-metric-label">CO₂ saved</div></div>
+        </div>
+      </div>
+      <div class="u-section">
+        <div class="u-label">Speed — Last 12 min</div>
+        <div class="u-chart" id="u-chart"></div>
+        <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:#6B7C8D;padding:2px 2px 0;"><span>12 min ago</span><span>now</span></div>
+      </div>
+      <div class="u-section" style="flex:1">
+        <div class="u-label">Event Log</div>
+        <div class="u-event-log" id="u-event-log">
+          <div class="u-event"><div class="u-etime">14:31</div><div class="u-edot" style="background:#F5A623"></div><div><div class="u-etext">Traffic alert — A10 km 138</div><div class="u-esub">+12 min delay estimated</div></div></div>
+          <div class="u-event"><div class="u-etime">13:58</div><div class="u-edot" style="background:#2B8FD0"></div><div><div class="u-etext">Passed Poitiers</div><div class="u-esub">On schedule</div></div></div>
+          <div class="u-event"><div class="u-etime">12:44</div><div class="u-edot" style="background:#2ECC8A"></div><div><div class="u-etext">Rest stop completed</div><div class="u-esub">45 min break — EU compliant</div></div></div>
+          <div class="u-event"><div class="u-etime">08:47</div><div class="u-edot" style="background:#2ECC8A"></div><div><div class="u-etext">Border cleared — FR/BE</div><div class="u-esub">Customs OK · no delay</div></div></div>
+          <div class="u-event"><div class="u-etime">07:12</div><div class="u-edot" style="background:#2ECC8A"></div><div><div class="u-etext">Departure confirmed</div><div class="u-esub">18 pallets · seal TRN-8821</div></div></div>
+        </div>
+      </div>
+      <div class="u-section">
+        <div class="u-label">Cargo Manifest</div>
+        <div class="u-cargo"><span class="u-cargo-name">Frozen goods (1–6)</span><div style="display:flex;gap:5px;align-items:center"><span class="u-cargo-w">3.2t</span><span class="badge badge-green" style="font-size:0.62rem">OK</span></div></div>
+        <div class="u-cargo"><span class="u-cargo-name">Electronics (7–12)</span><div style="display:flex;gap:5px;align-items:center"><span class="u-cargo-w">4.1t</span><span class="badge badge-green" style="font-size:0.62rem">OK</span></div></div>
+        <div class="u-cargo" style="border:none"><span class="u-cargo-name">Auto parts (13–18)</span><div style="display:flex;gap:5px;align-items:center"><span class="u-cargo-w">11.1t</span><span class="badge badge-green" style="font-size:0.62rem">OK</span></div></div>
+      </div>
+      <button class="u-sim-btn" id="u-sim-btn" onclick="startUltraSim()">▶ Simulate Live Journey</button>
+      <button class="u-back-btn" onclick="showScreen('marketplace')">← Back to Listings</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-icon" id="toast-icon">✅</div>
+  <div class="toast-text" id="toast-text"></div>
+</div>
+
+<script>
+// ── NAVIGATION ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  const btns = document.querySelectorAll('.nav-btn');
+  const map = { home: 0, publish: 1, marketplace: 2, tracking: 3 };
+  if (btns[map[id]]) btns[map[id]].classList.add('active');
+  if (id === 'tracking') initMap();
+  if (id === 'marketplace') renderListings();
+}
+
+// ── SLIDER ──
+function updateSlider(el) {
+  document.getElementById('slider-display').textContent = el.value + '%';
+  el.style.setProperty('--val', el.value + '%');
+}
+// init slider style
+window.addEventListener('DOMContentLoaded', () => {
+  const sl = document.getElementById('space-slider');
+  sl.style.setProperty('--val', sl.value + '%');
+  renderListings();
+});
+
+// ── PRICE CALC ──
+function calculatePrice() {
+  const from = document.getElementById('from').value || 'Tournai';
+  const to = document.getElementById('to').value || 'Arcachon';
+  const space = parseInt(document.getElementById('space-slider').value);
+  const truckVal = parseInt(document.getElementById('truck-size').value);
+
+  // Simulated distance
+  const distances = {
+    'Tournai, Belgium|Arcachon, France': 892,
+    'Paris, France|Lyon, France': 465,
+    'Brussels, Belgium|Marseille, France': 1063,
+  };
+  let dist = distances[from + '|' + to] || Math.floor(400 + Math.random() * 600);
+
+  const palettes = Math.round(truckVal * space / 100);
+  const fuel = Math.round(dist * 0.35);
+  const driver = Math.round(dist * 0.18);
+  const margin = Math.round((fuel + driver) * 0.15);
+  const total = fuel + driver + margin;
+  const perPalette = Math.round(total / palettes);
+  const price = perPalette * palettes;
+
+  document.getElementById('dist-display').textContent = dist + ' km';
+  document.getElementById('space-display').textContent = space + '% (' + palettes + ' pallets)';
+  document.getElementById('fuel-display').textContent = fuel + ' €';
+  document.getElementById('driver-display').textContent = driver + ' €';
+  document.getElementById('price-display').textContent = price + ' €';
+
+  const pr = document.getElementById('price-result');
+  pr.classList.add('show');
+  document.getElementById('publish-actions').style.display = 'flex';
+}
+
+function resetForm() {
+  document.getElementById('price-result').classList.remove('show');
+  document.getElementById('publish-actions').style.display = 'none';
+}
+
+function publishOffer() {
+  showToast('🎉', '<strong>Listing published!</strong>Your route is now live on the Marketplace.');
+  setTimeout(() => showScreen('marketplace'), 1800);
+}
+
+// ── TOAST ──
+function showToast(icon, text) {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-icon').textContent = icon;
+  document.getElementById('toast-text').innerHTML = text;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── LISTINGS DATA ──
+const allListings = [
+  { id: 1, from: 'Tournai', to: 'Arcachon', country: 'fr', date: 'Apr 14', space: 60, type: 'Pallets', price: 680, badge: 'Available', badgeClass: 'badge-green' },
+  { id: 2, from: 'Brussels', to: 'Lyon', country: 'fr', date: 'Apr 15', space: 35, type: 'Bulk', price: 420, badge: '2 spots left', badgeClass: 'badge-orange' },
+  { id: 3, from: 'Lille', to: 'Bordeaux', country: 'fr', date: 'Apr 16', space: 80, type: 'Refrigerated', price: 890, badge: 'Refrigerated', badgeClass: 'badge-blue', isRef: true },
+  { id: 4, from: 'Paris', to: 'Nantes', country: 'fr', date: 'Apr 14', space: 45, type: 'Fragile', price: 310, badge: 'Available', badgeClass: 'badge-green' },
+  { id: 5, from: 'Ghent', to: 'Marseille', country: 'be', date: 'Apr 17', space: 70, type: 'Pallets', price: 1100, badge: 'Available', badgeClass: 'badge-green' },
+  { id: 6, from: 'Liège', to: 'Strasbourg', country: 'be', date: 'Apr 15', space: 50, type: 'Bulk', price: 540, badge: 'Available', badgeClass: 'badge-green' },
+  { id: 7, from: 'Rennes', to: 'Nice', country: 'fr', date: 'Apr 18', space: 25, type: 'Refrigerated', price: 760, badge: '1 spot left', badgeClass: 'badge-orange', isRef: true },
+];
+
+let activeFilter = 'all';
+
+function filterListings(f, btn) {
+  activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderListings();
+}
+
+function renderListings() {
+  const container = document.getElementById('listings-container');
+  if (!container) return;
+  let filtered = allListings;
+  if (activeFilter === 'fr') filtered = allListings.filter(l => l.country === 'fr');
+  if (activeFilter === 'be') filtered = allListings.filter(l => l.country === 'be');
+  if (activeFilter === 'ref') filtered = allListings.filter(l => l.isRef);
+
+  container.innerHTML = filtered.map(l => `
+    <div class="listing-card" onclick="bookListing('${l.from}', '${l.to}')">
+      <div>
+        <div class="listing-route">
+          <span class="listing-city">${l.from}</span>
+          <span class="listing-arrow">→</span>
+          <span class="listing-city">${l.to}</span>
+          <span class="badge ${l.badgeClass}" style="margin-left:8px">${l.badge}</span>
+        </div>
+        <div class="listing-meta">
+          <span class="meta-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            ${l.date}
+          </span>
+          <span class="meta-chip">
+            📦 ${l.type}
+          </span>
+          <span class="meta-chip">
+            Available space:
+            <span class="capacity-bar"><span class="capacity-fill" style="width:${l.space}%"></span></span>
+            ${l.space}%
+          </span>
+        </div>
+      </div>
+      <div class="listing-right">
+        <div class="listing-price">${l.price} €</div>
+        <div class="listing-date">SmartLog Price</div>
+        <button class="btn btn-primary" style="padding:8px 16px;font-size:0.82rem;">Book</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function bookListing(from, to) {
+  showToast('📦', `<strong>Booking confirmed!</strong>${from} → ${to} · Live tracking now available.`);
+  setTimeout(() => showScreen('tracking'), 1800);
+}
+
+// ── ULTRA TRACKING JS ──
+let mapInstance = null;
+let truckMarker = null;
+let ultraSimRunning = false;
+let ultraSimInterval = null;
+
+const WAYPOINTS = [
+  [50.6051,3.3885],[50.2,2.8],[49.4,2.1],[48.85,2.35],
+  [48.4,1.8],[47.2,1.2],[46.6,0.8],[46.0,0.5],
+  [45.2,-0.1],[44.8,-0.5],[44.6572,-1.1678]
+];
+
+let truckProgress = 0.62;
+
+function interpolateRoute(t) {
+  const total = WAYPOINTS.length - 1;
+  const seg = t * total;
+  const i = Math.min(Math.floor(seg), total-1);
+  const f = seg - i;
+  const a = WAYPOINTS[i], b = WAYPOINTS[i+1];
+  return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f];
+}
+
+function initMap() {
+  if (mapInstance) return;
+  mapInstance = L.map('map', { zoomControl:false }).setView([47.5, 0.8], 6);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution:'© CartoDB', maxZoom:19
+  }).addTo(mapInstance);
+  L.control.zoom({ position:'bottomleft' }).addTo(mapInstance);
+
+  L.polyline(WAYPOINTS, { color:'rgba(43,143,208,0.2)', weight:3, dashArray:'8,6' }).addTo(mapInstance);
+  L.polyline(WAYPOINTS.slice(0,8), { color:'#2B8FD0', weight:4, opacity:0.9 }).addTo(mapInstance);
+
+  const ci = (emoji, bg) => L.divIcon({
+    html:`<div style="background:${bg};border:2px solid white;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 3px 10px rgba(0,0,0,0.5)">${emoji}</div>`,
+    iconSize:[26,26], iconAnchor:[13,13], className:''
+  });
+  [{pos:[50.6051,3.3885],e:'🏭',bg:'#1A6FA8',l:'Tournai'},
+   {pos:[48.85,2.35],e:'🗼',bg:'#333',l:'Paris'},
+   {pos:[44.84,-0.58],e:'🍷',bg:'#333',l:'Bordeaux'},
+   {pos:[44.6572,-1.1678],e:'🏁',bg:'#1a9e6a',l:'Arcachon'}
+  ].forEach(c => L.marker(c.pos,{icon:ci(c.e,c.bg)}).addTo(mapInstance).bindPopup(`<strong>${c.l}</strong>`));
+
+  const truckIcon = L.divIcon({
+    html:`<div style="background:#2B8FD0;border:3px solid white;border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 0 6px rgba(43,143,208,0.25),0 4px 14px rgba(0,0,0,0.5)">🚛</div>`,
+    iconSize:[38,38], iconAnchor:[19,19], className:''
+  });
+  truckMarker = L.marker(interpolateRoute(0.62), { icon:truckIcon, zIndexOffset:1000 }).addTo(mapInstance);
+  truckMarker.bindPopup('<strong>SL-2026-0892</strong><br>87 km/h · Jean-Luc M.');
+
+  // Live clock & cams
+  function tickClock() {
+    const now = new Date();
+    const t = now.toTimeString().slice(0,8);
+    const el = document.getElementById('u-clock');
+    const c1 = document.getElementById('u-cam1-t');
+    const c2 = document.getElementById('u-cam2-t');
+    if(el) el.textContent = t;
+    if(c1) c1.textContent = t;
+    if(c2) c2.textContent = t;
+  }
+  tickClock(); setInterval(tickClock, 1000);
+
+  // Sensor noise
+  setInterval(() => {
+    const temp = (4.2 + (Math.random()-0.5)*0.6).toFixed(1);
+    const el_t = document.getElementById('u-temp');
+    const el_sf = document.getElementById('u-sf-temp');
+    if(el_t) el_t.textContent = temp + '°C';
+    if(el_sf) el_sf.style.width = Math.round(parseFloat(temp)/10*100) + '%';
+
+    const hum = Math.round(61 + (Math.random()-0.5)*4);
+    const el_h = document.getElementById('u-hum');
+    const el_sh = document.getElementById('u-sf-hum');
+    if(el_h) el_h.textContent = hum + '%';
+    if(el_sh) el_sh.style.width = hum + '%';
+
+    const vib = Math.random() > 0.85 ? 'Med' : 'Low';
+    const el_v = document.getElementById('u-vib');
+    const el_sv = document.getElementById('u-sf-vib');
+    if(el_v) el_v.textContent = vib;
+    if(el_sv) el_sv.style.width = (vib==='Med'?45:15)+'%';
+
+    const spd = Math.round(87 + (Math.random()-0.5)*14);
+    const el_s = document.getElementById('u-speed');
+    if(el_s) el_s.textContent = spd;
+    speeds.push(spd); speeds.shift();
+    renderUChart();
+  }, 2000);
+
+  // Alert rotation
+  const alerts = [
+    'Traffic detected on A10 — 12 min delay added',
+    'Rest area in 28 km — driver break recommended',
+    'Strong crosswind — 60 km/h gusts on bridge',
+    'Cargo temp nominal — 4.2°C stable',
+    'Toll gate passed — Virsac · €18.40 charged',
+  ];
+  let aIdx = 0;
+  setInterval(() => {
+    aIdx = (aIdx+1) % alerts.length;
+    const box = document.getElementById('u-alert-bar');
+    const txt = document.getElementById('u-alert-text');
+    if(box && txt) {
+      box.style.opacity = '0';
+      setTimeout(() => { txt.textContent = alerts[aIdx]; box.style.opacity = '1'; }, 400);
+    }
+  }, 6000);
+  const ab = document.getElementById('u-alert-bar');
+  if(ab) ab.style.transition = 'opacity 0.4s';
+
+  renderUChart();
+}
+
+const speeds = [82,88,91,85,87,90,84,88,92,87,85,87];
+function renderUChart() {
+  const c = document.getElementById('u-chart');
+  if(!c) return;
+  const max = Math.max(...speeds);
+  c.innerHTML = speeds.map(s => `<div class="u-bar" style="height:${Math.round(s/max*100)}%"></div>`).join('');
+}
+
+function startUltraSim() {
+  if (ultraSimRunning) return;
+  ultraSimRunning = true;
+  truckProgress = 0.62;
+  const btn = document.getElementById('u-sim-btn');
+  if(btn) { btn.textContent = '⏳ Simulation running...'; btn.disabled = true; }
+
+  ultraSimInterval = setInterval(() => {
+    truckProgress += 0.005;
+    if (truckProgress >= 1) {
+      truckProgress = 1;
+      clearInterval(ultraSimInterval);
+      ultraSimRunning = false;
+      const b = document.getElementById('u-sim-btn');
+      if(b) { b.textContent = '✅ Delivered — Arcachon'; b.style.background = 'linear-gradient(135deg,#2ECC8A,#22a870)'; }
+      const at = document.getElementById('u-alert-text');
+      const ab = document.getElementById('u-alert-bar');
+      if(at) at.textContent = '🎉 Delivery confirmed — Arcachon warehouse';
+      if(ab) { ab.style.borderColor='rgba(46,204,138,0.4)'; ab.style.background='rgba(46,204,138,0.1)'; at.style.color='#2ECC8A'; }
+      addUltraEvent('Delivery confirmed', 'All 18 pallets received — Arcachon', '#2ECC8A');
+      showToast('🎉', '<strong>Delivery confirmed!</strong>Your goods have arrived in Arcachon.');
+      return;
+    }
+    const pos = interpolateRoute(truckProgress);
+    truckMarker.setLatLng(pos);
+    const kmDone = Math.round(truckProgress * 892);
+    const kmLeft = 892 - kmDone;
+    const pct = Math.round(truckProgress * 100);
+    const setT = (id, v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+    setT('u-progress', null); const up=document.getElementById('u-progress'); if(up) up.style.width=pct+'%';
+    setT('u-pct', pct+'%');
+    setT('u-kmdone', kmDone);
+    setT('u-kmleft', kmLeft);
+    setT('u-eta-dist', kmLeft+' km remaining');
+    setT('u-cur-detail', kmLeft+' km remaining');
+    setT('u-cam1-loc', 'A10 · km '+Math.round(kmDone*0.6));
+    const etaMins = Math.round(kmLeft/87*60);
+    const etaH = Math.floor(etaMins/60), etaM = etaMins%60;
+    setT('u-eta', (19+etaH>23?'0':'')+(19+etaH)+':'+String(etaM).padStart(2,'0'));
+    const fuel = Math.max(5, Math.round(38 - truckProgress*35));
+    setT('u-fuel', fuel+'%');
+    setT('u-co2', Math.round(truckProgress*76)+' kg');
+    if(Math.random()<0.02) {
+      const evts=[['Speed camera zone','90 km/h — compliant'],['Toll gate passed','€12.30 auto-charged'],['Weather update','Clear skies ahead']];
+      const ev=evts[Math.floor(Math.random()*evts.length)];
+      addUltraEvent(ev[0],ev[1],'#2B8FD0');
+    }
+  }, 100);
+}
+
+function addUltraEvent(title, sub, color) {
+  const log = document.getElementById('u-event-log');
+  if(!log) return;
+  const now = new Date();
+  const t = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+  const el = document.createElement('div');
+  el.className = 'u-event';
+  el.style.animation = 'fadeIn 0.3s ease';
+  el.innerHTML = `<div class="u-etime">${t}</div><div class="u-edot" style="background:${color}"></div><div><div class="u-etext">${title}</div><div class="u-esub">${sub}</div></div>`;
+  log.insertBefore(el, log.firstChild);
+}
+</script>
+</body>
+</html>
